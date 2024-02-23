@@ -1,12 +1,16 @@
 package user
 
-import "net"
+import (
+	"SimpleCom/server"
+	"net"
+)
 
 type User struct {
-	Name string
-	Addr string
-	C    chan string
-	Conn net.Conn
+	Name   string
+	Addr   string
+	C      chan string
+	Conn   net.Conn
+	server *server.Server
 }
 
 // 创建一个User对象
@@ -30,4 +34,27 @@ func (u *User) listenMessag() {
 		msg := <-u.C
 		u.Conn.Write([]byte(msg + "\n"))
 	}
+}
+
+// 用户上线消息
+func (u *User) Online() {
+	u.server.MapLock.Lock()
+	u.server.OnlineMap[u.Name] = u
+	u.server.MapLock.Unlock()
+
+	u.server.BroadCast(u, "已上线")
+}
+
+// 用户下线消息
+func (u *User) OffLine() {
+	u.server.MapLock.Lock()
+	u.server.OnlineMap[u.Name] = u
+	u.server.MapLock.Unlock()
+
+	u.server.BroadCast(u, "已下线")
+}
+
+// 处理消息
+func (u *User) DoMessage(msg string) {
+	u.server.BroadCast(u, msg)
 }

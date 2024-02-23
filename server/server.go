@@ -3,6 +3,7 @@ package server
 import (
 	"SimpleCom/user"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -11,7 +12,7 @@ type Server struct {
 	Ip        string
 	Port      int
 	OnlineMap map[string]*user.User //在线用户对象是一个map集合userName:user
-	mapLock   sync.RWMutex          //锁
+	MapLock   sync.RWMutex          //读写锁
 	Message   chan string           //广播channel
 }
 
@@ -26,15 +27,31 @@ func NewServer(ip string, port int) *Server {
 	return server
 }
 
+// 连接处理
 func (s *Server) Handle(coon net.Conn) {
 	//fmt.Println("连接成功")
 	user := user.NewUser(coon)
-	s.mapLock.Lock()
-	s.OnlineMap[user.Name] = user
-	s.mapLock.Unlock()
-	// 广播消息
-	s.BroadCast(user, "已上线")
-	select {}
+	// 用户上线
+	user.Online()
+
+	// 开启一个goroutine 用于处理客户端消息
+	go func() {
+		buff := make([]byte, 4096)
+		for {
+			n, err := coon.Read(buff)
+			if n == 0 {
+				// 用户下线
+				user.OffLine()
+				return
+			}
+			if err != nil && err != io.EOF {
+				fmt.Println("Conn Read Err: ...", err)
+				return
+			}
+			msg := string(buff[:n-1])
+			user.DoMessage(msg)
+		}
+	}()
 }
 
 // 广播消息
@@ -47,11 +64,11 @@ func (s *Server) BroadCast(user *user.User, msg string) {
 func (s *Server) ListMessage() {
 	for {
 		msg := <-s.Message
-		s.mapLock.Lock()
+		s.MapLock.Lock()
 		for _, cli := range s.OnlineMap {
 			cli.C <- msg
 		}
-		s.mapLock.Unlock()
+		s.MapLock.Unlock()
 	}
 }
 
@@ -68,7 +85,12 @@ func (s *Server) Start() {
 	go s.ListMessage()
 
 	// 关闭连接
-	defer listen.Close()
+	defer func(listen net.Listener) {
+		err := listen.Close()
+		if err != nil {
+			fmt.Println("关闭连接失败", err.Error())
+		}
+	}(listen)
 
 	for {
 		coon, err := listen.Accept()
@@ -77,6 +99,7 @@ func (s *Server) Start() {
 			err.Error()
 			continue
 		}
+		// 业务操作
 		go s.Handle(coon)
 	}
 }
