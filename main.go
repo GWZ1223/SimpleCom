@@ -1,10 +1,8 @@
 package main
 
-import (
-	"SimpleCom/server"
-)
+import "SimpleCom/server"
 
 func main() {
-	newServer := server.NewServer("127.0.0.1", 8888)
-	newServer.Start()
+	server := server.NewServer("127.0.0.1", 8888)
+	server.Start()
 }

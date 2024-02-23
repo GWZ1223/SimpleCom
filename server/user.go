@@ -1,7 +1,6 @@
-package user
+package server
 
 import (
-	"SimpleCom/server"
 	"fmt"
 	"net"
 	"strings"
@@ -12,7 +11,7 @@ type User struct {
 	Addr   string
 	C      chan string
 	Conn   net.Conn
-	server *server.Server
+	server *Server
 }
 
 // 创建一个User对象
@@ -79,6 +78,23 @@ func (u *User) DoMessage(msg string) {
 			u.server.MapLock.Unlock()
 			u.sendMsg("修改成功" + u.Name + "\n")
 		}
+	} else if len(msg) > 4 && msg[:3] == "to|" {
+		remoteName := strings.Split(msg, "|")[1]
+		if remoteName == "" {
+			u.sendMsg("消息格式不正确")
+			return
+		}
+		remoteUser, ok := u.server.OnlineMap[remoteName]
+		if !ok {
+			u.sendMsg("当前用户名不存在")
+			return
+		}
+		content := strings.Split(msg, "|")[2]
+		if content == "" {
+			u.sendMsg("内容不能为空")
+			return
+		}
+		remoteUser.sendMsg(u.Name + "对你说：" + content)
 	} else {
 		u.server.BroadCast(u, msg)
 	}

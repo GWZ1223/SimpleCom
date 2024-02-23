@@ -1,7 +1,6 @@
 package server
 
 import (
-	"SimpleCom/user"
 	"fmt"
 	"io"
 	"net"
@@ -11,9 +10,9 @@ import (
 type Server struct {
 	Ip        string
 	Port      int
-	OnlineMap map[string]*user.User //在线用户对象是一个map集合userName:user
-	MapLock   sync.RWMutex          //读写锁
-	Message   chan string           //广播channel
+	OnlineMap map[string]*User //在线用户对象是一个map集合userName:user
+	MapLock   sync.RWMutex     //读写锁
+	Message   chan string      //广播channel
 }
 
 // 创建一个server的接口
@@ -21,7 +20,7 @@ func NewServer(ip string, port int) *Server {
 	server := &Server{
 		Ip:        ip,
 		Port:      port,
-		OnlineMap: make(map[string]*user.User),
+		OnlineMap: make(map[string]*User),
 		Message:   make(chan string),
 	}
 	return server
@@ -30,7 +29,7 @@ func NewServer(ip string, port int) *Server {
 // 连接处理
 func (s *Server) Handle(coon net.Conn) {
 	//fmt.Println("连接成功")
-	user := user.NewUser(coon)
+	user := NewUser(coon)
 	// 用户上线
 	user.Online()
 
@@ -55,7 +54,7 @@ func (s *Server) Handle(coon net.Conn) {
 }
 
 // 广播消息
-func (s *Server) BroadCast(user *user.User, msg string) {
+func (s *Server) BroadCast(user *User, msg string) {
 	sendMsg := "[" + user.Addr + "]" + user.Name + msg
 	s.Message <- sendMsg
 }
