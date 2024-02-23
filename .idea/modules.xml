@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/SimpleCom.iml" filepath="$PROJECT_DIR$/.idea/SimpleCom.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../SimpleCom_Client/.idea/SimpleCom_Client.iml" filepath="$PROJECT_DIR$/../SimpleCom_Client/.idea/SimpleCom_Client.iml" />
       <module fileurl="file://$PROJECT_DIR$/../SimpleCom_client/.idea/SimpleCom_client.iml" filepath="$PROJECT_DIR$/../SimpleCom_client/.idea/SimpleCom_client.iml" />
     </modules>
   </component>
