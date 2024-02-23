@@ -2,7 +2,9 @@ package user
 
 import (
 	"SimpleCom/server"
+	"fmt"
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -56,5 +58,36 @@ func (u *User) OffLine() {
 
 // 处理消息
 func (u *User) DoMessage(msg string) {
-	u.server.BroadCast(u, msg)
+	if msg == "who" {
+		// 查询当前在线用户
+		u.server.MapLock.Lock()
+		for _, user := range u.server.OnlineMap {
+			onlineMsg := "[" + user.Addr + "]" + user.Name + ":" + "在线.\n"
+			u.sendMsg(onlineMsg)
+		}
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		// 修改用户名: 用户消息格式 "rename:用户名"
+		newName := strings.Split(msg, ":")[1]
+		_, ok := u.server.OnlineMap[newName]
+		if ok {
+			u.sendMsg("用户名已存在,请重新输入.\n")
+		} else {
+			u.server.MapLock.Lock()
+			delete(u.server.OnlineMap, u.Name)
+			u.Name = newName
+			u.server.OnlineMap[newName] = u
+			u.server.MapLock.Unlock()
+			u.sendMsg("修改成功" + u.Name + "\n")
+		}
+	} else {
+		u.server.BroadCast(u, msg)
+	}
+}
+
+func (u *User) sendMsg(msg string) {
+	_, err := u.Conn.Write([]byte(msg))
+	if err != nil {
+		fmt.Println("操作失败", err.Error())
+		return
+	}
 }
