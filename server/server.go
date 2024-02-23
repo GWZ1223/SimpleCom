@@ -1,4 +1,4 @@
-package SimpleCom
+package server
 
 import (
 	"fmt"
